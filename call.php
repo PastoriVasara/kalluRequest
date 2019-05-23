@@ -1,5 +1,5 @@
 <?php
- header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
 include('../connectSQL.php');
 
@@ -16,7 +16,7 @@ if (isset($_POST['unit']) || isset($_POST['course'])) {
         {
             $queryModifiers .= $condition[$i];
         }
-        $queryModifiers .= '(parent.UNIT = "'.$unit[$i]'" OR child.UNIT = "'.$unit[$i].'")'; 
+        $queryModifiers .= '(parent.UNIT = "'.$unit[$i].'" OR child.UNIT = "'.$unit[$i].'")'; 
     }
     $queryModifiers .= 'ORDER BY Parent ASC';
     $fullQuery =$baseQuery.$queryModifiers;
