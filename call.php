@@ -3,12 +3,23 @@
 header('Content-Type: application/json');
 include('../connectSQL.php');
 
-if (isset($_POST['unit'])) {
+if (isset($_POST['unit']) || isset($_POST['course'])) {
     $unit = isset($_POST['unit']) ? $_POST['unit'] : null;
     $condition = isset($_POST['condition']) ? $_POST['condition'] : null;
-    $fullQuery = 'SELECT  linkedcourse.ID AS Parent, parent.CODE as Parent_Code, parent.NAME AS Parent_Course, linkedcourse.LINKEDID AS Child, child.CODE AS Child_Code, child.$
-                  FROM linkedcourse JOIN course_shrinked parent ON linkedcourse.ID = parent.ID JOIN course_shrinked child ON linkedcourse.LINKEDID = child.ID
-                  WHERE parent.UNIT = "'.$unit.'" OR child.UNIT = "'.$unit.'" ORDER BY Parent ASC';
+    
+    $baseQuery = 'SELECT  linkedcourse.ID AS Parent, parent.CODE as Parent_Code, parent.NAME AS Parent_Course, linkedcourse.LINKEDID AS Child, child.CODE AS Child_Code, child.$
+    FROM linkedcourse JOIN course_shrinked parent ON linkedcourse.ID = parent.ID JOIN course_shrinked child ON linkedcourse.LINKEDID = child.ID WHERE ';
+    $queryModifiers = '';
+    for($i = 0; $i < count($unit); $i++)
+    {
+        if($i != 0 && $i != count($unit)-1)
+        {
+            $queryModifiers .= $condition[$i];
+        }
+        $queryModifiers .= '(parent.UNIT = "'.$unit[$i]'" OR child.UNIT = "'.$unit[$i].'")'; 
+    }
+    $queryModifiers .= 'ORDER BY Parent ASC';
+    $fullQuery =$baseQuery.$queryModifiers;
 
     $IDsFROM = array();
     $childrenIDsFROM = array();
