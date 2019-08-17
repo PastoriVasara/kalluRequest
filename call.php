@@ -104,7 +104,7 @@ if (isset($_POST['unit']) || isset($_POST['course'])) {
 } elseif (isset($_POST['courses']) && $_POST['courses'] == 'all') {
     //$fullQuery = 'SELECT NAME, CODE, ID FROM course_shrinked';
     //$fullQuery = 'SELECT NAME, CODE, ID FROM course WHERE course.ID IN(SELECT ID ids FROM linkedcourse UNION ALL SELECT LINKEDID linkedids FROM linkedcourse)';
-    $fullQuery = 'SELECT * FROM courseSelector';
+    $fullQuery = 'SELECT * FROM courseselector';
     $courseName = array();
     $courseCode = array();
     $courseID = array();
@@ -118,5 +118,93 @@ if (isset($_POST['unit']) || isset($_POST['course'])) {
         }
     }
     echo json_encode(array($courseName,$courseCode,$courseID));
+} elseif(isset($_POST['tablePeriods']) || isset($_POST['tableDegrees']) || isset($_POST['tableUnits']))
+{
+    $units = isset($_POST['tableUnits']) ? $_POST['tableUnits'] : null;
+    $degrees = isset($_POST['tableDegrees']) ? $_POST['tableDegrees'] : null;
+    $periods = isset($_POST['tablePeriods']) ? $_POST['tablePeriods'] : null;
+    $fullQuery = 'SELECT course.*, @rownum := @rownum + 1 AS num FROM course, (SELECT @rownum := -1) r';
+    $queryModifier = '';
+    $periodModifier = '';
+    if($periods != null)
+    {
+        $periodModifier .= ' AND (';
+        for($i = 0; $i < count($periods); $i++)
+        {
+            if($i != 0)
+            {
+                $periodModifier .= 'OR '.$periods[$i].' =1 ';
+            }
+            else 
+            {
+                $periodModifier .= ' '.$periods[$i].' =1 ';
+            }
+        }
+        $periodModifier .= ')';
+    }
+    if($units != null)
+    {
+        $queryModifier .= '((UNIT = "';
+        for($i = 0; $i < count($units); $i++)
+        {
+            if($i != 0)
+            {
+                $queryModifier .= ' OR UNIT = "'.$units[$i].' "';
+            }
+            else 
+            {
+                $queryModifier .= $units[$i].'" ';
+            }
+        }
+        $queryModifier .=  ')'.$periodModifier.')';
+    }
+    if($degrees != null)
+    {
+        if($queryModifier == '')
+        {
+            $queryModifier .= '((DEGREE = "';
+        }
+        else
+        {
+            $queryModifier .= ' OR ((DEGREE = "';  
+        }
+        
+        for($i = 0; $i < count($degrees); $i++)
+        {
+            if($i != 0)
+            {
+                $queryModifier .= ' OR UNIT = "'.$degrees[$i].' "';
+            }
+            else 
+            {
+                $queryModifier .= $degrees[$i].'" ';
+            }
+        }
+        $queryModifier .=  ')'.$periodModifier.')';
+    }
+    if($queryModifier != '')
+    {
+        $fullQuery .= ' WHERE '.$queryModifier;
+    }
+    //have to convert data to utf8mb4
+    $conn->set_charset('utf8mb4');
+    $data = $conn->query($fullQuery)->fetch_all(MYSQLI_ASSOC);
+    echo json_encode($data);
+}
+elseif(isset($_POST['courseSchedule']))
+{
+    $courses = $_POST['courseSchedule'];
+    $fullQuery = "SELECT * FROM lecture as u JOIN course AS b ON b.ID = u.ID  WHERE u.ID in( ";
+        $text = "";
+        $count = count($courses);
+        for ($i = 0; $i < $count; $i++) {
+            $text = $text.$courses[$i].",";
+        }
+        $text = rtrim($text, ",");
+        $fullQuery = $fullQuery.$text.") ORDER BY u.ID, u.LECTURETYPE";
+
+        $conn->set_charset('utf8mb4');
+        $data = $conn->query($fullQuery)->fetch_all(MYSQLI_ASSOC);
+        echo json_encode($data);
 }
 ?>
